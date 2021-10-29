@@ -68,7 +68,7 @@ function app = StartALDIC(app)
     % Gather the ROI for each image
     ROIarray = app.AllROIMasks;
     % Gather the images to preform the initial guess
-
+    
     %step1 load images between the first selected reference image and the next
     IMarray = app.AllImages;
     obj.DICparaImgSize = size(IMarray{1});
@@ -91,7 +91,9 @@ function app = StartALDIC(app)
     %step5 solve each frame in the image sequence
     
     for i = 2:length(IMarray)
-       
+        
+        obj.DICparaImgRefMask = ROIarray{i};
+        
         % Def image
         ImgDef = ImgNormalized{i};
 

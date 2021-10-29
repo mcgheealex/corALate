@@ -9,13 +9,14 @@ classdef ALDIC
     % Date: 2015.04,06,07; 2016.03,04; 2020.11
     % ---------------------------------------------
     % The following functions are modified/adapted from the original
-    % ReadImage -> InitDICoptions 
+    % ReadImage -> moved to the Functions/ALDIC folder 
     % IntegerSearch -> InitSearchSize
     
     properties
         ProgramFolder = '2D_ALDIC-master';
         Name = '';
         SaveFolderPath = '';
+        quadtree = false;
         
         % Raw Image Data
         Images = {};
@@ -31,10 +32,11 @@ classdef ALDIC
         DICparaLoadImgMethod = 0;
         DICparaImgSeqIncUnit = 1;
         DICparaImgSeqIncROIUpdateOrNot = 0;
+        DICparaImgSize = [];
+        DICparaImgRefMask = [];
         DICparaSubpb2FDOrFEM = 0;
         DICparaNewFFTSearch = 0;
         DICparaClusterNo = 1;
-        DICparaImgSize = [];
         DICparamu = 1e-3;
         DICparabeta = 0;
         DICparatol = 1e-2;
@@ -56,6 +58,7 @@ classdef ALDIC
         DICmesh_N = []; 
         DICmesh_y0World = [];
         DICmesh_coordinatesFEMWorld = [];
+        DICmesh_elementMinSize = 2;
         
         % DIC algo vars
         Df = [];
@@ -154,9 +157,6 @@ classdef ALDIC
         
         
         % The initial guess steps FFT based cross correlation
-        % These functions still need revision for use with GUI
-        %  user should be able to iteratively update the search window size
-        %  user should be able to view the results of the initial guess
         function obj = InitialGuess(obj,ImgRef,ImgDef,ImgSeqNum)
             % This function computes the FFT-based cross correlation on first 7 frames
             % and then uses the data driven method to estimate the initial guesses for other frames
@@ -171,8 +171,10 @@ classdef ALDIC
             
             %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             
-            % get the DIC parameters
+            % zip all the DIC options into a struct
             DICpara = zipDICPara(obj);
+            % zip all the DIC mesh parameters into a struct
+            DICmesh = zipDICmesh(obj);
             
             if ImgSeqNum == 2 || obj.DICparaNewFFTSearch == 1 % Apply FFT-based cross correlation to compute the initial guess
                 
@@ -216,6 +218,11 @@ classdef ALDIC
                 obj.ResultFEMesh_winstepsize{1+floor(fNormalizedNewIndex/obj.DICparaImgSeqIncUnit)} = obj.DICparawinstepsize;
                 obj.ResultFEMesh_gridx{1+floor(fNormalizedNewIndex/obj.DICparaImgSeqIncUnit)} = obj.DICparagridx;
                 obj.ResultFEMesh_gridy{1+floor(fNormalizedNewIndex/obj.DICparaImgSeqIncUnit)} = obj.DICparagridy;
+                
+                if obj.quadtree
+                    % ====== Generate a quadtree mesh considering sample's complex geometry   83
+                    GenerateQuadtreeMesh; % Generate a quadtree mesh
+                end
                 
                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             else % Use the solved results from the last frame as the new initial guess
@@ -275,8 +282,11 @@ classdef ALDIC
             % ==============================================
             
             %% Initialization
-            % get the DIC parameters
+            % zip all the DIC options into a struct
             DICpara = zipDICPara(obj);
+            % zip all the DIC mesh parameters into a struct
+            DICmesh = zipDICmesh(obj);
+            
             gridxROIRange = DICpara.gridxyROIRange.gridx;
             gridyROIRange = DICpara.gridxyROIRange.gridy;
             winsize = DICpara.winsize;
@@ -343,41 +353,6 @@ classdef ALDIC
                 
             end
             
-            %                 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-            %                 % Plotting initial guess
-            %                 % --------------------------------------
-            %                 close all;
-            %                 figure;
-            %                 surf(u);
-            %                 colorbar;
-            %                 title('Displacement u','fontweight','normal')
-            %                 set(gca,'fontSize',18);
-            %                 title('$x-$displacement $u$','FontWeight','Normal','Interpreter','latex');
-            %                 axis tight; %axis equal; % set(gca,'XTick',[] );
-            %                 xlabel('$x$ (pixels)','Interpreter','latex'); ylabel('$y$ (pixels)','Interpreter','latex');
-            %                 set(gcf,'color','w');
-            %                 a = gca;
-            %                 a.TickLabelInterpreter = 'latex';
-            %                 b = colorbar;
-            %                 b.TickLabelInterpreter = 'latex';
-            %                 box on; colormap jet;
-            %
-            %                 figure;
-            %                 surf(v);
-            %                 colorbar;
-            %                 title('Displacement v','fontweight','normal')
-            %                 set(gca,'fontSize',18);
-            %                 title('$y-$displacement $v$','FontWeight','Normal','Interpreter','latex');
-            %                 axis tight; %axis equal; % set(gca,'XTick',[] );
-            %                 xlabel('$x$ (pixels)','Interpreter','latex'); ylabel('$y$ (pixels)','Interpreter','latex');
-            %                 set(gcf,'color','w');
-            %                 a = gca;
-            %                 a.TickLabelInterpreter = 'latex';
-            %                 b = colorbar;
-            %                 b.TickLabelInterpreter = 'latex';
-            %                 box on; colormap jet;
-            %
-            
         end
         
         
@@ -393,10 +368,12 @@ classdef ALDIC
             
             % zip all the DIC options into a struct
             DICpara = zipDICPara(obj);
-            
+            % zip all the DIC mesh parameters into a struct
+            DICmesh = zipDICmesh(obj);
+
             [obj.USubpb1{1},obj.FSubpb1{1},obj.HtempPar,obj.ALSub1Timetemp,obj.ConvItPerEletemp,obj.LocalICGNBadPtNumtemp] = ...
                 LocalICGN(obj.U0,obj.DICmesh_coordinatesFEM,obj.Df,ImgRef,ImgDef,DICpara,'GaussNewton',obj.DICparatol);
-
+            
         end
         
         function obj = Subproblem2(obj)
@@ -899,9 +876,9 @@ classdef ALDIC
             DICpara.DispFilterStd = obj.DICparaDispFilterStd; 
             DICpara.StrainFilterSize = obj.DICparaStrainFilterSize; 
             DICpara.StrainFilterStd = obj.DICparaStrainFilterStd;
-            DICpara.DICparaInitFFTSearchMethod = obj.DICparaInitFFTSearchMethod;
-            DICpara.DICparaSizeOfFFTSearchRegion = obj.DICparaSizeOfFFTSearchRegion;
-
+            DICpara.InitFFTSearchMethod = obj.DICparaInitFFTSearchMethod;
+            DICpara.SizeOfFFTSearchRegion = obj.DICparaSizeOfFFTSearchRegion;
+            DICpara.ImgRefMask = obj.DICparaImgRefMask;
         end
         
         function obj = unzipDICPara(obj,DICpara)
@@ -925,9 +902,9 @@ classdef ALDIC
             obj.DICparaDispFilterStd = DICpara.DispFilterStd; 
             obj.DICparaStrainFilterSize = DICpara.StrainFilterSize; 
             obj.DICparaStrainFilterStd = DICpara.StrainFilterStd;
-            obj.DICparaInitFFTSearchMethod = DICpara.DICparaInitFFTSearchMethod;
-            obj.DICparaSizeOfFFTSearchRegion = DICpara.DICparaSizeOfFFTSearchRegion;
-
+            obj.DICparaInitFFTSearchMethod = DICpara.InitFFTSearchMethod;
+            obj.DICparaSizeOfFFTSearchRegion = DICpara.SizeOfFFTSearchRegion;
+            obj.DICparaImgRefMask = DICpara.ImgRefMask;
         end
         
         function DICmesh = zipDICmesh(obj)
@@ -942,7 +919,7 @@ classdef ALDIC
             DICmesh.N = obj.DICmesh_N; 
             DICmesh.y0World = obj.DICmesh_y0World;
             DICmesh.coordinatesFEMWorld = obj.DICmesh_coordinatesFEMWorld;
-        
+            DICmesh.elementMinSize = obj.DICmesh_elementMinSize; 
         end
         
         function obj = unzipDICmesh(obj,DICmesh)
@@ -957,7 +934,7 @@ classdef ALDIC
             obj.DICmesh_N = DICmesh.N; 
             obj.DICmesh_y0World = DICmesh.y0World;
             obj.DICmesh_coordinatesFEMWorld = DICmesh.coordinatesFEMWorld;
-        
+            obj.DICmesh_elementMinSize = DICmesh.elementMinSize ;
         end
         
         function cc = zipcc(obj)

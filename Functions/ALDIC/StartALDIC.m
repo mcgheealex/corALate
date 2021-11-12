@@ -25,7 +25,7 @@ function app = StartALDIC(app)
     
     % win step size
     winstep = app.stepsizeEditField_ALDIC.Value;
-    obj.DICparawinstepsize = winstep;
+    obj.DICparawinstepsize = [winstep];
     
     % ALDIC options
     obj.DICparatol = app.toleranceEditField_ALDIC.Value;
@@ -71,14 +71,20 @@ function app = StartALDIC(app)
     
     %step1 load images between the first selected reference image and the next
     IMarray = app.AllImages;
+    
+    % save all ROI data and Image Data into the object
+    obj.Images = IMarray;
+    obj.ROIMasks = ROIarray;
+    
     obj.DICparaImgSize = size(IMarray{1});
     
     %step2 normalize images
-    [x,y] = obj.convertROItogridpoints(ROIarray{1});
+    [y,x] = obj.convertROItogridpoints(ROIarray{1});
     obj.DICparagridx = x;
     obj.DICparagridy = y;
     DICpara = obj.zipDICPara();
     [ImgNormalized,DICpara.gridxyROIRange] = funNormalizeImg(IMarray,DICpara.gridxyROIRange);
+    
     obj = obj.unzipDICPara(DICpara);
 
     %step3 compute image gradient of the reference image
@@ -97,19 +103,34 @@ function app = StartALDIC(app)
         % Def image
         ImgDef = ImgNormalized{i};
 
-        obj = obj.runALDIC(ImgRef,ImgDef,i);
+        %step5.2 Compute an initial guess
+        obj = InitialGuess(obj,ImgRef,ImgDef,i);
+
+        %step5.3 solve Subproblem 1
+        obj = Subproblem1(obj,ImgRef,ImgDef);
+
+        %step5.4 solve Subproblem 2
+        obj = Subproblem2(obj);
+
+        %step5.5 apply ADMM iterations
+        obj = ADMMiteration(obj,ImgRef,ImgDef,i);
         
-        u = obj.u_f;
-        v = obj.v_f;
-        x0=obj.DICmesh_x0;
-        y0=obj.DICmesh_y0;
+        u = obj.Ux;
+        v = obj.Vy;
         
-        U = double(ROIarray{i});
-        uu = imresize(flipud(imrotate(u,90)),[y(2)-y(1)+1,x(2)-x(1)+1]);
+        x = [min(obj.DICmesh_y0,[],'all'),max(obj.DICmesh_y0,[],'all')]; % not a mistake for x = y0
+        y = [min(obj.DICmesh_x0,[],'all'),max(obj.DICmesh_x0,[],'all')];
+        
+        % remake ROI array based on the DICmesh 
+        U = zeros(size(ROIarray{i}));
+        U(y(1):y(2),x(1):x(2))=1;
+        obj.ROIMasks{i} = U;
+        ROIarray{i} = U;
+        uu = imresize(u,[y(2)-y(1)+1,x(2)-x(1)+1]);
         U(y(1):y(2),x(1):x(2)) = uu;
         
-        V = double(ROIarray{i});
-        vv = imresize(flipud(imrotate(v,90)),[y(2)-y(1)+1,x(2)-x(1)+1]);
+        V = ROIarray{i};
+        vv = imresize(v,[y(2)-y(1)+1,x(2)-x(1)+1]);
         V(y(1):y(2),x(1):x(2)) = vv;
         
         scaleBar = { 10, 200, 'px', 1.6, [30,30]} ;
@@ -122,8 +143,9 @@ function app = StartALDIC(app)
         func_PlaceFigure(app.A_Vdisp_ALDIC,ImgoutV);
         
     end
-    
+     
     %step6 check convergence
     %obj = obj.checkConvergence(obj);
-    
+     app.SavedAnalysis{pos,1} = obj;
+     script_UpdateListOfObjects
 end

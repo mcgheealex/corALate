@@ -264,8 +264,17 @@ if gridx(2) > size(f,1)-borderGapx2+1, gridx(2) = size(f,1)-borderGapx2+1; end
 if gridy(2) > size(f,2)-borderGapy2+1, gridy(2) = size(f,2)-borderGapy2+1; end
 
 %% Interpolate
-try xList=[gridx(1):winstepsize(1):gridx(2)]; catch, xList=[gridx(1):winstepsize:gridx(2)]; end
-try yList=[gridy(1):winstepsize(2):gridy(2)]; catch, yList=[gridy(1):winstepsize:gridy(2)]; end
+try 
+    xList=[gridx(1):winstepsize:gridx(2)]; 
+catch 
+    xList=[gridx(2):winstepsize:gridx(1)]; 
+end
+
+try 
+    yList=[gridy(1):winstepsize:gridy(2)];
+catch 
+    yList=[gridy(2):winstepsize:gridy(1)]; 
+end
 [indx]=find(tempx>min(xList) & tempx<max(xList));
 [indy]=find(tempy>min(yList) & tempy<max(yList));
 [indxy] = intersect(indx,indy);

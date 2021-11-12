@@ -3,7 +3,7 @@ function [imgout] = imageoverlay2(background,foreground,alpha)
 % an alpha to the foreground to merge both images
 % both the background and foreground can be image stacks of the same length
 
-ogim = size(background);
+ogim = size(background,1,2);
 % AxesH = axes('Units', 'pixels', 'position', [10, 10, ogim(1), ogim(2)], ...
 %              'Visible', 'off');
          
@@ -27,7 +27,7 @@ fg = rgb2gray(frame2im(F));
 
 imsw = figure('visible','off');
 imsw.Position = [1,1,ogim(2)+100,ogim(1)+100];
-imshow(imresize(bkg,ogim),[])
+imshow(imresize(bkg,ogim(:,:,1)),[])
 hold on
 h = imshow(imresize(fg,ogim),[]); % Save the handle; we'll need it later
 hold off

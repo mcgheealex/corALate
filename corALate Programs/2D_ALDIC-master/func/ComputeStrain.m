@@ -8,6 +8,20 @@
 %   case 3: finite element Gauss points;
 % ==================================
 
+% vars needed
+% FLocal
+% coordinatesFEM
+% M,N,DICpara.winstepsize
+% ULocal
+%%%% implement plane fitting
+% PlaneWindowSize (for the implemetation of plane fitting)
+%%%% implement finite element Gauss points
+% coordinatesFEM
+% elementsFEM
+% USubpb2
+% GaussPtOrder
+
+
 switch DICpara.MethodToComputeStrain
 
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -16,8 +30,10 @@ switch DICpara.MethodToComputeStrain
         FStraintemp = FStrain;
         Rad = 0;
         
-        temp = 1:1:size(coordinatesFEM,1); temp = temp';
-        temp = reshape(temp,M,N); temp2 = temp(Rad+1:M-Rad, Rad+1:N-Rad);
+        temp = 1:1:size(coordinatesFEM,1); 
+        temp = temp';
+        temp = reshape(temp,M,N); 
+        temp2 = temp(Rad+1:M-Rad, Rad+1:N-Rad);
         temp2 = reshape(temp2, (M-2*Rad)*(N-2*Rad),1);
         
         temp3 = zeros(4*(M-2*Rad)*(N-2*Rad),1);
@@ -52,8 +68,7 @@ switch DICpara.MethodToComputeStrain
         FStrain = D*reshape(ULocal,length(ULocal),1);  
         
         % Compute strain method II: Use Plane Fitting method
-        prompt = 'What is your half window size: ';
-        Rad = input(prompt);
+        Rad = PlaneWindowSize;
         
         [Uytemp, Uxtemp, UNewtemp] = PlaneFit2(reshape(ULocal(1:2:end),M,N), DICpara.winstepsize, DICpara.winstepsize,Rad);
         [Vytemp, Vxtemp, VNewtemp] = PlaneFit2(reshape(ULocal(2:2:end),M,N), DICpara.winstepsize, DICpara.winstepsize,Rad);
@@ -80,12 +95,15 @@ switch DICpara.MethodToComputeStrain
     %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
     case 3 % Finite element method
         
-        GaussPtOrder = 2; [FStrain] = funGlobal_NodalStrainAvg(coordinatesFEM,elementsFEM,USubpb2,GaussPtOrder);
+        GaussPtOrder = 2; 
+        [FStrain] = funGlobal_NodalStrainAvg(coordinatesFEM,elementsFEM,USubpb2,GaussPtOrder);
         Rad = 1;  
         
         % Find coordinatesFEM that belong to (x(Rad+1:M-Rad,Rad+1:N-Rad),y(Rad+1:M-Rad,Rad+1:N-Rad))
-        temp = 1:1:size(coordinatesFEM,1); temp = temp';
-        temp = reshape(temp,M,N); temp2 = temp(Rad+1:M-Rad, Rad+1:N-Rad);
+        temp = 1:1:size(coordinatesFEM,1); 
+        temp = temp';
+        temp = reshape(temp,M,N);
+        temp2 = temp(Rad+1:M-Rad, Rad+1:N-Rad);
         temp2 = reshape(temp2, (M-2*Rad)*(N-2*Rad),1);
         
         temp3 = zeros(4*(M-2*Rad)*(N-2*Rad),1);
@@ -134,5 +152,7 @@ for tempi = 1:4:length(FStrain)
 end
 
 FStraintemp = FStrainFinite(temp3);
-FStrainWorld = FStraintemp; FStrainWorld(2:4:end) = -FStrainWorld(2:4:end); FStrainWorld(3:4:end) = -FStrainWorld(3:4:end); 
+FStrainWorld = FStraintemp;
+FStrainWorld(2:4:end) = -FStrainWorld(2:4:end); 
+FStrainWorld(3:4:end) = -FStrainWorld(3:4:end); 
     

@@ -606,8 +606,10 @@ for ImgSeqNum = 2 : length(ImgNormalized)
     FSubpb2 = ResultDefGrad{ImgSeqNum-1}.F;
     coordinatesFEM = ResultFEMeshEachFrame{ImgSeqNum-1}.coordinatesFEM;
     elementsFEM = ResultFEMeshEachFrame{ImgSeqNum-1}.elementsFEM;
-    xList = min(coordinatesFEM(:,1)):DICpara.winstepsize:max(coordinatesFEM(:,1)); M = length(xList);
-    yList = min(coordinatesFEM(:,2)):DICpara.winstepsize:max(coordinatesFEM(:,2)); N = length(yList);
+    xList = min(coordinatesFEM(:,1)):DICpara.winstepsize:max(coordinatesFEM(:,1)); 
+    M = length(xList);
+    yList = min(coordinatesFEM(:,2)):DICpara.winstepsize:max(coordinatesFEM(:,2)); 
+    N = length(yList);
     [x0,y0] = ndgrid(xList,yList);  
     x0 = x0-reshape(UFEMesh(1:2:end),size(x0,1),size(x0,2));  
     y0 = y0-reshape(UFEMesh(2:2:end),size(y0,1),size(y0,2));  

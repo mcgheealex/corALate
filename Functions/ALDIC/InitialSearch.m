@@ -29,6 +29,7 @@ function app = InitialSearch(app)
     
     % Gather the ROI for each image
     ROIarray = app.AllROIMasks;
+    
     % Gather the images to preform the initial guess
     IMarray = app.AllImages;
     obj.DICparaImgSize = size(IMarray{1});

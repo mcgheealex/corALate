@@ -108,7 +108,6 @@ for ImgSeqNum = 2 : length(ImgNormalized)
         [DICmesh] = MeshSetUp(x0temp,y0temp,DICpara); clear x0temp y0temp;
         
         
-        
         % ====== Initial Value ======
         U0 = Init(u,v,cc.max,DICmesh.x0,DICmesh.y0,0); % PlotuvInit; [x0temp,y0temp,u,v,cc]= IntegerSearchMg(fNormalized,gNormalized,file_name,DICpara);
         % ====== Deal with incremental mode ======

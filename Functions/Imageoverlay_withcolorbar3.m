@@ -39,9 +39,9 @@ function [Imgout] = Imageoverlay_withcolorbar3(BG, OL, Mask, alpha, PlotTitle, s
     Clims = [colorScale{1},colorScale{2}];
 
     %make colormap where the first and last values are used for the overlay
-    cmap2 = jet(256);
+    cmap2 = turbo(256);
     cmap2(1,:) = 0;
-    cmap2(256,:) = 0.94;
+    cmap2(256,:) = 1;
 
     % prepare overlay (the right side has extea pixels of white
     % space (ws) to the right
@@ -118,9 +118,9 @@ function [Imgout] = Imageoverlay_withcolorbar3(BG, OL, Mask, alpha, PlotTitle, s
     OLFig.AlphaData = M1;
 
     % add the colorbar values to the right of the corresponding color
-    text(Ty-ws/1.5+2*sidepadding, toppadding+CBpadding + (BS)/2,num2str(round(max(Clims),1)),'FontSize',fontsize) %top color
-    text(Ty-ws/1.5+2*sidepadding, (toppadding+CBpadding)/2 + totLen/2 + (BS)/2,num2str(round(mean(Clims),1)),'FontSize',fontsize) % middle color
-    text(Ty-ws/1.5+2*sidepadding, totLen + (BS)/2,num2str(round(min(Clims),1)),'FontSize',fontsize) %bottom color
+    text(Ty-ws/1.5+2*sidepadding, toppadding+CBpadding + (BS)/2,num2str(round(max(Clims),2)),'FontSize',fontsize) %top color
+    text(Ty-ws/1.5+2*sidepadding, (toppadding+CBpadding)/2 + totLen/2 + (BS)/2,num2str(round(mean(Clims),2)),'FontSize',fontsize) % middle color
+    text(Ty-ws/1.5+2*sidepadding, totLen + (BS)/2,num2str(round(min(Clims),2)),'FontSize',fontsize) %bottom color
 
     text(Ty-ws/1.5+2*sidepadding, (toppadding+CBpadding)/2 ,colorScale{3},'FontSize',fontsize) % scale units
 

@@ -1,0 +1,44 @@
+
+try close(v); catch; end
+
+close all; 
+%%%%%% Read saved images %%%%%%%
+files = dir('Ca*Mises.jpg'); ImgGrayScaleMax = 255;
+im = cell(length(files),1);
+for i = 1:length(files)
+    im{i} = files(i).name;
+end
+
+%%%%%% Write frames to videos %%%%%%
+v = VideoWriter('video_stress_vonMises.mp4','MPEG-4');
+v.FrameRate = 20;
+open(v);  % set(gcf, 'Position', [100 100 500 500]);
+for tempk = [ 1 : 1 : length(im) ]
+    
+    myfig = figure;
+    % imshow(imread(im{tempk},1),'DisplayRange',[0,ImgGrayScaleMax]);
+    imshow( imread( im{tempk}) );  title(['Frame #',num2str(tempk+1)]); 
+    % text(830,100,['Frame #',num2str(tempk+1)]);
+    % set(gcf, 'Position', [100 100 500 500]);
+    
+    frame = getframe(gcf);
+    writeVideo(v,frame);
+    clf(myfig); close all; 
+    % waitbar(tempk/length(files));
+    
+end
+
+ 
+close(v);
+
+
+
+%%
+
+
+% alpha = 10:1:1000;
+% R = 66;
+% R0 = 25; 
+% 
+% F11 = alpha.^2./(alpha.^3+R^3-R0^3).^(2/3);
+% figure, plot(alpha,F11,'.'); 

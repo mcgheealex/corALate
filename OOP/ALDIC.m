@@ -37,7 +37,7 @@ classdef ALDIC
         DICparaImgRefMask = [];
         DICparaSubpb2FDOrFEM = 0;
         DICparaNewFFTSearch = 0;
-        DICparaClusterNo = 1;
+        DICparaClusterNo = [];
         DICparamu = 1e-3;
         DICparabeta = 0;
         DICparatol = 1e-2;
@@ -144,7 +144,6 @@ classdef ALDIC
         end
         
         function obj = runALDIC(obj,ImgRef,ImgDef,ImgSeqNum)
-            
             
             %step5.2 Compute an initial guess
             obj = InitialGuess(obj,ImgRef,ImgDef,ImgSeqNum);

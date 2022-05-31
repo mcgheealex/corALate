@@ -1,5 +1,7 @@
 function app = StartALDIC(app)
     
+reverse = false;
+
     %% get the current analysis object
     pos = app.CurrentAnalysisNum;
     obj = app.SavedAnalysis{pos,1};
@@ -71,6 +73,8 @@ function app = StartALDIC(app)
     
     %step1 load images between the first selected reference image and the next
     IMarray = app.AllImages;
+    N = length(IMarray);
+    refIndicies = app.RefSelction;
     
     % save all ROI data and Image Data into the object
     obj.Images = IMarray;
@@ -86,25 +90,31 @@ function app = StartALDIC(app)
     [ImgNormalized,DICpara.gridxyROIRange] = funNormalizeImg(IMarray,DICpara.gridxyROIRange);
     
     obj = obj.unzipDICPara(DICpara);
-
+    
     %step3 compute image gradient of the reference image
-    ImgRef = ImgNormalized{1};
-    obj.Df = funImgGradient(ImgRef,ImgRef); 
+       ImgRef = ImgNormalized{1};
+       obj.Df = funImgGradient(ImgRef,ImgRef);  
 
     %step4 Initialize variable storage 
     obj = obj.InitResultVars(length(ImgNormalized));
 
     %step5 solve each frame in the image sequence
-    
-    for i = 2:length(IMarray)
-        
+    count = 2; % used to count the number of frames from the reference frame
+    for i = 2: N
+        % get the current ROI for this frame
         obj.DICparaImgRefMask = ROIarray{i};
         
-        % Def image
+        % Ref Image 
+%         if refIndicies{i-1}
+%              ImgRef = ImgNormalized{i-1};
+%              obj.Df = funImgGradient(ImgRef,ImgRef); 
+%              count = 2; % reset the initial guess count. 
+%         end
+        
         ImgDef = ImgNormalized{i};
 
         %step5.2 Compute an initial guess
-        obj = InitialGuess(obj,ImgRef,ImgDef,i);
+        obj = InitialGuess(obj,ImgRef,ImgDef,count);
 
         %step5.3 solve Subproblem 1
         obj = Subproblem1(obj,ImgRef,ImgDef);
@@ -141,7 +151,7 @@ function app = StartALDIC(app)
         
         func_PlaceFigure(app.A_Udisp_ALDIC,ImgoutU);
         func_PlaceFigure(app.A_Vdisp_ALDIC,ImgoutV);
-        
+        count = count + 1;
     end
      
     %step6 check convergence
